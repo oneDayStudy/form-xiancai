@@ -132,9 +132,7 @@
 						 </tr>
 				 </table>
 				<h2 style="text-align: left;margin:10px 0;color:#3c763d;font-weight: 600;" v-if="record.series_btdx">剥皮镀锡</h2>
-				 {{record.series_btdx}}
-				 <br/>
-				lj_detail: {{record.lj_detail}}
+				
 				 <table v-if="record.series_btdx" class="futable" style="width: 100%;color: #302f32;margin-top:0px;">
 					<tr  style="background: #dff0d8;color:#3c763d;height:50px;">
 						 <th>机种</th>
@@ -159,10 +157,10 @@
 						 <td>{{v.memo}}</td>
 					</tr>
 				 </table>
-				 <compTree></compTree>
+				 <!-- <compTree></compTree> -->
 		 </div>
         </a-table>
-		<compTree></compTree>
+		<!-- <compTree></compTree> -->
       </a-card>
       </a-col>
     </a-row>   
@@ -172,7 +170,7 @@
 	import locale from 'ant-design-vue/es/date-picker/locale/zh_CN';
 	import moment from 'moment';
 	import 'moment/locale/zh-cn';
-	import compTree from './comTree.vue'
+	// import compTree from './comTree.vue'
   const columns=[
 	  {
 		  title: '多工制令单',
@@ -235,11 +233,11 @@
 export default {
   name: 'comform',
   components: {
-	  compTree
+	  // compTree
     },
   data(){
 		return {
-		excelData:[],
+		excelData:[],//导出ececel表用
 		username:"",//用户名
 		defaultExpandedRowKeys:[],//展开项
 		outTableData: {
@@ -271,6 +269,7 @@ export default {
 		  const search = this.search//搜索词
 		  if(search){
 			  //过滤
+			  console.log('这是data table计算数据的根据值 ===================',this.data)
 			  return this.data.filter(data=>{
 				  // console.log(Object.keys(data))//打印出所有等data内等key
 				  //1:所有项
@@ -300,10 +299,11 @@ export default {
 	  // console.log(this.$refs.tableA.expandedRowKeys)
   },
   methods:{	
-    fnInitEcelTable(){
-		this.excelData = this.data //你要导出的数据list。
-		this.data.forEach((v,i)=>{
-			console.log(i,v)
+    fnInitEcelTable(){//第一次组重组数据
+	    // console.log("！！！！！！！！！！！！",this.data)//这里数据已经被改变了
+		// this.excelData = this.data //你要导出的数据list,all。
+		this.excelData = this.tables //你要导出的数据list- 只导出search。
+		this.excelData.forEach((v,i)=>{
 			this.excelData[i]= {
 				ProdtQtyFROM:v.ProdtQtyFROM,
 				date:v.date,
@@ -312,17 +312,19 @@ export default {
 				series:v.series,
 				zl_no:v.zl_no
 			}
-				this.excelData[i].lj_detail =[
+				this.excelData[i].lj_detail =[//qingkong
 				]
 			v.lj_detail.forEach((val,j)=>{
-				// console.log(val,j)
+				console.log(val,j)
 				this.excelData[i].lj_detail.push({
 					name:val[0],
 					danweiYongliang:val[1],
 					// yongliang:val[2],
-					danwei:val[3],
-					guige:val[4],
-					beizhu:val[5],
+					uid:val[3],//uid
+					danwei:val[4],
+					guige:val[5],
+					beizhu:val[6],
+					zongyongliang:val[7],
 					dagou:val[8],
 					timer:val[9]
 				})
@@ -332,34 +334,23 @@ export default {
 						name:value[2] + value[0],
 						danweiYongliang:value[1],
 						// yongliang:val[2],
-						danwei:value[3],
-						guige:value[4],
-						beizhu:value[5],
+						uid:value[3],
+						danwei:value[4],
+						guige:value[5],
+						beizhu:val[6],
+						zongyongliang:val[7],
 						dagou:value[8],
 						timer:value[9]
 					})
 				})
 			})
-			// v.lj_detail.forEach((val,j)=>{
-			// 	val[2].forEach((value,k)=>{
-			// 		this.excelData[i].lj_detail.push({
-			// 			name:value[2] + value[0],
-			// 			danweiYongliang:value[1],
-			// 			// yongliang:val[2],
-			// 			danwei:value[3],
-			// 			guige:value[4],
-			// 			beizhu:value[5],
-			// 			dagou:value[8],
-			// 			timer:value[9]
-			// 		})
-			// 	})
-			// })
+			
 		})
 	},  
 	downloadExcel() {//列表下载
 				  alert('导入中。。。')				 
 				  this.fnInitEcelTable()
-				   console.log(this.excelData)
+				   // console.log(this.excelData)
 	              this.export2Excel()
 	},
 	export2Excel() {//数据写入excel
@@ -371,24 +362,23 @@ export default {
 	              const list = that.excelData;
 	              const data = that.formatJson(filterVal, list);
 	              export_json_to_excel(tHeader, data, '多工制令单excel');// 导出的表格名称，根据需要自己命名
+				  this.fnAjaxUpdata()//打印完成后一定要重新刷新一下数据，不然搜索框将不能用，搜索框再次搜索数据内层的数据会被format而导致的乱掉
 	            })
 	 },
-	 filterTab(objArr){//自定义过滤器
+	 filterTab(objArr){//自定义过滤器 -第二次重组第数据
 		let temp = []
 	    objArr.forEach((v)=>{
-			console.log(v)
+			// console.log(v)
 			temp.push(JSON.stringify([
 				v.name,
+				v.danweiYongliang,
+				v.zongyongliang,
 				v.danwei,
-				v.beizhu,
 				v.guige,
-				v.danweiYongliang
+				v.beizhu,
 			]
-				
 			))
-			
 		})
-		console.log("temp:",temp)
 		 return temp
 	 },
 	 //格式转换
@@ -397,7 +387,6 @@ export default {
 				    if(j=="lj_detail"){
 						v[j] = this.filterTab(v[j])
 					}
-					
 					return (v[j])
 			   }))
 	},
@@ -423,7 +412,7 @@ export default {
 	// ------------------业务
 	fnAjaxUpdata(){//2 - 接口 一：向后端发送时间根据事件获取数据
 		let url = this.baseurl+'jk_wire_issue/get_wj_by_date.php?startDate='+this.datapicker[0]+'&endDate='+this.datapicker[1]
-		this.loading=true
+		this.loading = true
 		this.$http.get(url).then((res)=>{
 				  console.log(res)
 				  if(!res) return
