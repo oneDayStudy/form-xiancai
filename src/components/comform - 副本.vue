@@ -15,7 +15,7 @@
         </a-button>
 		<span v-if="this.tables.length>0" style="font-size: 20px;font-weight: 600;">
 		共 <strong style="color:#1890ff;font-size:22px;">{{this.data.length ?this.data.length :0}}</strong> 条多工制令单 </span>
-		<a-button type="primary" style="margin-left:10px;" @click="downloadExcel">
+		<a-button type="primary" style="margin-left:10px;" @click="testExe">
 		 <a-icon type="file-excel"></a-icon>
 			导出
 		</a-button>
@@ -139,10 +139,8 @@
 						 <th >组件</th>
 						 <th>线芯总类</th>
 						 <th>线芯类别</th>
-						 <th>A端剥皮</th>
-						 <th>A端镀锡</th>
-						 <th>B端剥皮</th>
-						 <th>B端镀锡</th>
+						 <th>剥皮</th>
+						 <th>镀锡</th>
 						 <th style="width: 30px;">WD</th>
 						 <th>备注</th>
 					</tr>
@@ -153,10 +151,8 @@
 						 <td>{{v.component}}</td>
 						 <td>{{v.wire_type}}</td>
 						 <td>{{v.wire_category}}</td>
-						 <td>{{v.peelingA}}</td>
-						 <td>{{v.tinningA}}</td>
-						 <td>{{v.peelingB}}</td>
-						 <td>{{v.tinningB}}</td>
+						 <td>{{v.peeling}}</td>
+						 <td>{{v.tinning}}</td>
 						 <td>{{v.extra_type}}</td>
 						 <td>{{v.memo}}</td>
 					</tr>
@@ -273,7 +269,9 @@ export default {
 		  const search = this.search//搜索词
 		  if(search){
 			  //过滤
+			  // console.log('这是data table计算数据的根据值 ===================',this.data)
 			  return this.data.filter(data=>{
+				  // console.log(Object.keys(data))//打印出所有等data内等key
 				  //1:所有项
 				  // return Object.keys(data).some(key=>{
 					 //  console.log(data[key])
@@ -301,26 +299,6 @@ export default {
 	  // console.log(this.$refs.tableA.expandedRowKeys)
   },
   methods:{	
-	downloadExcel() {//列表下载
-				 let _this = this
-				 if(_this.tables.length>0){
-					 this.$confirm({
-					    title: '确认导出？',
-					    onOk() {
-							
-							setTimeout(()=>{
-								_this.fnInitEcelTable()
-							},500)
-					    },
-					    onCancel() {},
-					  })
-				 }else{
-					 	_this.$message.warning('请先选择数据！')	
-				 } 
-								 
-				  // 
-	              // this.export2Excel()//这里不能再放此处-当数据量庞大数据没格式化完就会走这里
-	},  
     fnInitEcelTable(){
 		// this.excelData = this.data //你要导出的全部数据。
 		//第一次数据重组
@@ -341,13 +319,36 @@ export default {
 			if(v.lj_detail){//这里要判断一下，不然数据量太庞大时会报错并且不会导出表格--
 			//报错信息 Error in v-on handler: "TypeError: Cannot read property 'forEach' of null"
 				v.lj_detail.forEach((val,j)=>{
-				
+					// console.log(val,j)
+					// this.excelData[i].lj_detail.push({
+					// 	name:val[0],
+					// 	danweiYongliang:val[1],
+					// 	// yongliang:val[2],
+					// 	// uid:val[3],//uid
+					// 	danwei:val[4],
+					// 	guige:val[5],
+					// 	beizhu:val[6],
+					// 	zongyongliang:val[7],
+					// 	dagou:val[8],
+					// 	timer:val[9]
+					// })
 					this.excelData[i].lj_detail.push([
 						val[0],val[1],val[7],val[4],val[5],val[6]
 					])
 					//第三层数据 --这边创建后会有问题 --只有最后一项lj_detail内的数据依此导入进去
 					val[2].forEach((value,k)=>{
-						
+						// this.excelData[i].lj_detail.push({
+						// 	name:value[2] + value[0],
+						// 	danweiYongliang:value[1],
+						// 	// yongliang:val[2],
+						// 	// uid:value[3],
+						// 	danwei:value[4],
+						// 	guige:value[5],
+						// 	beizhu:val[6],
+						// 	zongyongliang:val[7],
+						// 	dagou:value[8],
+						// 	timer:value[9]
+						// })
 						this.excelData[i].lj_detail.push([
 							value[2] + value[0], value[1],value[7],value[4],value[5],value[6]
 						])
@@ -380,7 +381,6 @@ export default {
 						pd_name:val.pd_name,
 						series:val.series,
 						zl_no:val.zl_no,
-						zhanwei:null,
 						lj_detailName:v[0],
 						lj_detailDanwY:v[1],
 						lj_detailZongY:v[2],
@@ -396,13 +396,7 @@ export default {
 						pd_name:null,
 						series:null,
 						zl_no:null,
-						zhanwei:null,
-						lj_detailName:v[0],
-						lj_detailDanwY:v[1],
-						lj_detailZongY:v[2],
-						lj_detailDanwei:v[3],
-						lj_detailGuige:v[4],
-						lj_detailBeiz:v[5],
+						lj_detail:JSON.stringify(v)
 					})
 				}
 			})
@@ -411,23 +405,47 @@ export default {
 		  this.excelData =  temp 
 		 // console.log('exceldate update format ==',this.excelData)
 		 //解析最后一列数组
-		 this.export2Excel()//放此处安全
+		 this.exceldataOnelayer()
+		
 	}, 
-	
-	
+	 exceldataOnelayer(){ //解析最后一列数组
+	 console.log(this.excelData)
+		  this.export2Excel()//放此处安全
+	 },
+	downloadExcel() {//列表下载
+				  alert('导入中。。。')				 
+				  this.fnInitEcelTable()
+				   // console.log(this.excelData)
+	              // this.export2Excel()//这里不能再放此处-当数据量庞大数据没格式化完就会走这里
+	},
 	export2Excel() {//数据写入excel
 	            var that = this;
 	            require.ensure([], () => {
 	              const { export_json_to_excel } = require('@/excel/export2Excel'); //这里必须使用绝对路径，使用@/+存放export2Excel的路径
-	              const tHeader = ['多工制令单','用量','日期','产品名称','产品规格','用料-名','  线材' ,'名称','单位用量','总用量', '单位' , '规格' , '备注']; // 导出的表头名信息
-	              const filterVal = ['zl_no','ProdtQtyFROM', 'date', 'pd_id','pd_name','series','zhanwei','lj_detailName','lj_detailDanwY','lj_detailZongY','lj_detailDanwei','lj_detailGuige','lj_detailBeiz']; // 导出的表头字段名，需要导出表格字段名
+	              const tHeader = ['多工制令单','用量','日期','产品名称','产品规格','用料-名','具体线材 : [ 名称 - 单位用量 - 总用量 - 单位 - 规格 - 备注 ]']; // 导出的表头名信息
+	              const filterVal = ['zl_no','ProdtQtyFROM', 'date', 'pd_id','pd_name','series','lj_detailName','lj_detailDanwY','lj_detailZongY','lj_detailDanwei','lj_detailGuige','lj_detailBeiz']; // 导出的表头字段名，需要导出表格字段名
 	              const list = that.excelData;
 	              const data = that.formatJson(filterVal, list);
 	              export_json_to_excel(tHeader, data, '多工制令单excel');// 导出的表格名称，根据需要自己命名
 				  this.fnAjaxUpdata()//打印完成后一定要重新刷新一下数据，不然搜索框将不能用，搜索框再次搜索数据内层的数据会被format而导致的乱掉
 	            })
 	 },
-	
+	 filterTab(objArr){//自定义过滤器 -第二次重组第数据
+		let temp = []
+	    objArr.forEach((v)=>{
+			// console.log(v)
+			temp.push(JSON.stringify([
+				v.name,
+				v.danweiYongliang,
+				v.zongyongliang,
+				v.danwei,
+				v.guige,
+				v.beizhu,
+			]
+			))
+		})
+		 return temp
+	 },
 	 //格式转换
 	 formatJson(filterVal, jsonData) {
 	           return jsonData.map(v => filterVal.map(j =>{
@@ -437,8 +455,40 @@ export default {
 					return (v[j])
 			   }))
 	},
-
-	
+	// formatExcelDate(){//自定义第三次格式- 整个数据
+	// 	console.log(this.excelData)
+	// 	var temp = []
+	// 	this.excelData.map((v,i)=>{
+	// 		v.lj_detail.map((value,k)=>{
+	// 			if(k==0){
+	// 				temp.push({
+	// 					ProdtQtyFROM: v.ProdtQtyFROM,
+	// 					date:v.date,
+	// 					pd_id:v.pd_id,
+	// 					pd_name:v.pd_name,
+	// 					series:v.series,
+	// 					zl_no:v.zl_no,
+	// 					lj_detail:value
+	// 				})
+	// 			}else{
+	// 				temp.push({
+	// 					ProdtQtyFROM: v.ProdtQtyFROM,
+	// 					date:v.date,
+	// 					pd_id:v.pd_id,
+	// 					pd_name:v.pd_name,
+	// 					series:v.series,
+	// 					zl_no:v.zl_no,
+	// 					lj_detail:value
+	// 				})
+	// 			}
+	// 		})
+	// 	})
+	// 	return this.excelData = temp
+	// 	console.log(this.excelData)
+	// },
+	testExe(){
+		  this.downloadExcel()
+	},
 	// ----------------------事件  
 	onSearch(v){//搜索框
 	  console.log('seach:',v)
